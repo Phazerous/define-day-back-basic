@@ -10,6 +10,7 @@ import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
 import { nanoid } from 'nanoid';
 import User from 'src/typeorm/User';
+import UserCreateDto from './dto/UserCreateDto';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,9 @@ export class AuthService {
     private userService: UsersService,
   ) {}
 
-  async signup(email: string, password: string) {
+  async signup(userCreateDto: UserCreateDto) {
+    const { email, password } = userCreateDto;
+
     const existingUser = await this.userService.getUserByEmail(email);
 
     if (existingUser)
@@ -28,7 +31,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(
       password,
-      process.env.SALT_OR_ROUNDS,
+      +process.env.SALT_OR_ROUNDS,
     );
 
     const user = await this.userService.createUser(email, hashedPassword);
@@ -55,6 +58,34 @@ export class AuthService {
     const token = await this.generateTokenForUser(user);
 
     return token;
+  }
+
+  async signout(token: string) {
+    const tokenEntity = await this.tokenRepository.findOne({
+      where: {
+        token,
+      },
+    });
+
+    if (tokenEntity) await this.tokenRepository.remove(tokenEntity);
+  }
+
+  async validateUser(token: string) {
+    const tokenEntity = await this.tokenRepository.findOne({
+      where: { token },
+      relations: {
+        user: true,
+      },
+    });
+
+    const user = tokenEntity?.user;
+
+    if (!user)
+      throw new UnauthorizedException(
+        `Couldn't find a user with specified token.`,
+      );
+
+    return user;
   }
 
   private async generateTokenForUser(user: User) {

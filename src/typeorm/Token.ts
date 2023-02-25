@@ -6,7 +6,9 @@ export default class Token {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({
+    unique: true,
+  })
   token: string;
 
   @ManyToOne(() => User, (user) => user.tokens)
