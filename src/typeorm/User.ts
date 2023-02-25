@@ -6,6 +6,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import Token from './Token';
+import Word from './Word';
 
 @Entity('user')
 export default class User {
@@ -23,4 +24,7 @@ export default class User {
 
   @OneToMany(() => Token, (token) => token.user)
   tokens: Token[];
+
+  @OneToMany(() => Word, (word) => word.user)
+  words: Word[];
 }
